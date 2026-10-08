@@ -133,10 +133,29 @@ async function main() {
   const previewAsset = await fetch(`${status.buildUrl}/assets/offline-model.glb`)
   assert.equal(previewAsset.status, 200)
   assert.deepEqual(Buffer.from(await previewAsset.arrayBuffer()), model)
+  await evaluate("document.querySelector('#studio-debug-sessions-menu-play-pause-button').click()")
+  let previewRendered = false
+  const previewDeadline = Date.now() + 120000
+  while (Date.now() < previewDeadline) {
+    const frame = win.webContents.mainFrame.framesInSubtree.find(f => f.url.startsWith(status.buildUrl))
+    previewRendered = frame && await frame.executeJavaScript(`Boolean(window.ecs &&
+      Array.from(document.querySelectorAll('canvas')).some(c => c.width > 0 && c.height > 0) &&
+      performance.getEntriesByType('resource').some(r => r.name.includes('offline-model.glb')))`)
+      .catch(() => false)
+    if (previewRendered) break
+    await new Promise(resolve => setTimeout(resolve, 300))
+  }
+  assert.ok(previewRendered, `Play must load the model in the embedded preview: ${JSON.stringify({
+    frames: win.webContents.mainFrame.framesInSubtree.map(f => f.url), blocked,
+  })}`)
   await fs.writeFile(path.join(output, 'editor.png'), (await win.webContents.capturePage()).toPNG())
   // Reload verifies that imported assets and scene references were persisted, not just in memory.
   win.webContents.reload()
+  // Desktop routing is in memory: a full reload returns to the project list.
+  await waitFor("document.querySelector('#app-search')")
+  win.webContents.send('navigate-to-path', `/local-studio/${project.appKey}`)
   await waitFor("document.querySelector('[title=\"offline-model.glb\"]') && document.querySelector('#studio-scene-viewport canvas')")
+  assert.match(await fs.readFile(sceneFile, 'utf8'), /assets\/offline-model\.glb/)
   const zipBase64 = await evaluate(`(async () => {
     const r = await fetch('file-sync:///project/build?appKey=${project.appKey}', {method:'POST'});
     if (!r.ok) throw new Error(await r.text());
@@ -151,7 +170,8 @@ async function main() {
   assert.deepEqual(await zip.file(exportedModel).async('nodebuffer'), model)
   assert.equal(blocked.length, 0, 'core flow must not request external web services')
   const result = {passed: true, packaged: app.isPackaged, version: app.getVersion(),
-    modelImported: true, scenePersisted: true, preview: status.buildUrl, zipSize: zipData.length, blocked}
+    modelImported: true, scenePersisted: true, previewRendered,
+    preview: status.buildUrl, zipSize: zipData.length, blocked}
   await fs.writeFile(path.join(output, 'result.json'), JSON.stringify(result, null, 2))
   await evaluate(`fetch('file-sync:///project/watch-local?appKey=${project.appKey}', {method:'DELETE'})`)
   console.log('STANDALONE_SMOKE_PASSED', result)

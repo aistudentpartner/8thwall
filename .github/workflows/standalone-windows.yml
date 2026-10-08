@@ -44,7 +44,7 @@ jobs:
           Get-Content out/standalone-smoke/stderr.log
           if ($app.ExitCode -ne 0) { throw "Installed application failed: $($app.ExitCode)" }
           $result = Get-Content out/standalone-smoke/result.json | ConvertFrom-Json
-          if (-not ($result.passed -and $result.packaged -and $result.modelImported -and $result.scenePersisted)) { throw 'Packaged test did not pass' }
+          if (-not ($result.passed -and $result.packaged -and $result.modelImported -and $result.scenePersisted -and $result.previewRendered)) { throw 'Packaged test did not pass' }
       - uses: actions/upload-artifact@v4
         with:
           name: 8thWall-TW-Windows-x64
