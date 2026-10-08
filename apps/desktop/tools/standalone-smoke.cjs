@@ -98,7 +98,7 @@ async function main() {
     }
     win.webContents.debugger.on('message', listener)
   })
-  await evaluate("document.querySelector('#studio-import-model').click()")
+  await win.webContents.executeJavaScript("document.querySelector('#studio-import-model').click()", true)
   const {backendNodeId} = await chooser
   await win.webContents.debugger.sendCommand('DOM.setFileInputFiles', {files: [modelFile], backendNodeId})
   win.webContents.debugger.detach()
