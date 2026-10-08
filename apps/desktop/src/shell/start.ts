@@ -34,6 +34,7 @@ const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000
 if (process.argv.includes('--software-rendering')) {
   app.disableHardwareAcceleration()
   app.commandLine.appendSwitch('use-angle', 'swiftshader')
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader')
 }
 
 const setupAutoUpdater = (win: BrowserWindow) => {

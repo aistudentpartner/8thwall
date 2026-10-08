@@ -9,7 +9,7 @@ import {useTranslation} from 'react-i18next'
 import type {ProjectClientSide} from '../../shared/desktop/local-sync-types'
 import {combine} from '../common/styles'
 import {Icon} from '../ui/components/icon'
-import {showProject} from '../studio/local-sync-api'
+import {showProject, installPackages, extractApiError} from '../studio/local-sync-api'
 import {createThemedStyles} from '../ui/theme'
 
 const useStyles = createThemedStyles(theme => ({
@@ -93,6 +93,17 @@ const ProjectListItemOptions: React.FC<IProjectListItemOptions> = ({
   const classes = useStyles()
   const {t} = useTranslation(['studio-desktop-pages'])
   const [isOpen, setIsOpen] = React.useState(false)
+  const [installing, setInstalling] = React.useState(false)
+  const install = async () => {
+    if (installing || !window.confirm('這會連線下載此專案所需的套件，並執行專案套件的安裝程序。是否繼續？')) return
+    setInstalling(true)
+    try {
+      await installPackages(project.appKey, [])
+      window.alert('套件安裝完成，現在可以開啟專案。')
+    } catch (error) {
+      window.alert(`套件安裝失敗：${await extractApiError(error)}`)
+    } finally { setInstalling(false) }
+  }
   const buttonRef = React.useRef<HTMLButtonElement>(null)
 
   React.useEffect(() => {
@@ -174,6 +185,12 @@ const ProjectListItemOptions: React.FC<IProjectListItemOptions> = ({
               <MenuOption
                 label={t('project_list_item.menu.option.change_disk_location')}
                 onClick={onMove}
+              />
+            }
+            {Build8.VERSION_ID === 'standalone-tw' && project?.validLocation &&
+              <MenuOption
+                label={installing ? '正在安裝套件…' : '安裝套件（需要網路）'}
+                onClick={install}
               />
             }
           </div>
