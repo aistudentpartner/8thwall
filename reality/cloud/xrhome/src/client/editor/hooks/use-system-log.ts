@@ -20,6 +20,7 @@ const useSystemLog = () => {
   })
 
   React.useEffect(() => {
+    if (Build8.PLATFORM_TARGET !== 'desktop') return undefined
     window.electron.systemLog.setHandler(appKey, handler)
     return () => {
       window.electron.systemLog.clearHandler(appKey)

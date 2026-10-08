@@ -1,4 +1,5 @@
 import React from 'react'
+import {useTranslation} from 'react-i18next'
 import {useParams} from 'react-router-dom'
 import {useDispatch} from 'react-redux'
 import {useQueryClient} from '@tanstack/react-query'
@@ -126,7 +127,9 @@ const LocalStudioPageInner: React.FC<{appKey: string}> = () => {
     />
   )
 
-  res = <LogContainerSplit extraTabContent={<DebugSessionsMenu />}>{res}</LogContainerSplit>
+  if (Build8.PLATFORM_TARGET === 'desktop') {
+    res = <LogContainerSplit extraTabContent={<DebugSessionsMenu />}>{res}</LogContainerSplit>
+  }
 
   res = (
     <>
@@ -145,6 +148,13 @@ const LocalStudioPageInner: React.FC<{appKey: string}> = () => {
 
 const FileSyncSuspense: React.FC<{children: React.ReactNode}> = ({children}) => {
   const localSync = useLocalSyncContext()
+  const {t} = useTranslation('browser-studio')
+  if (localSync.fileSyncStatus === 'failed') {
+    return <div className='web-sync-error' role='alert'>
+      <p>{t('sync.failed')}</p>
+      <button type='button' onClick={() => window.location.reload()}>{t('sync.retry')}</button>
+    </div>
+  }
   if (localSync.fileSyncStatus !== 'active') {
     return <Loader />
   }

@@ -163,3 +163,7 @@ packages/coaching-overlay/index.js
 packages/landing-page/index.js
 
 packages/dev8/src/capnp/
+
+# Browser Studio build output and user projects
+reality/cloud/xrhome/web-dist/
+apps/web/.data/

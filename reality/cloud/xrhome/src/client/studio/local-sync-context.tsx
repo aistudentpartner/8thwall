@@ -1,4 +1,5 @@
 import React from 'react'
+import {subscribeToProject} from '../web/project-events'
 import type {DeepReadonly} from 'ts-essentials'
 import {useTranslation} from 'react-i18next'
 import {useQueryClient} from '@tanstack/react-query'
@@ -27,6 +28,7 @@ type FileSyncStatus =
   | 'checking'  // Checking what the local state is
   | 'initialized'  // Local sync was already initialized, ready to start listening
   | 'listening'  // Listening for local changes
+  | 'failed'
   | 'active'  // Actively syncing files, changes are being processed
 
 type BuildStatus =
@@ -34,6 +36,7 @@ type BuildStatus =
   | 'npm-install-failed'
   | 'failed'
   | 'running'
+  | 'unavailable'
 
 type ILocalSyncContext = {
   appKey: string
@@ -201,6 +204,7 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to pull local files:', error)
+      throw error
     }
   }
 
@@ -269,12 +273,15 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
   // NOTE(christoph): The effect to initialize the empty git state may not have run yet
   const canListen = !!repo
   React.useEffect(() => {
-    window.electron.fileWatch?.addHandler(appKey, handleLocalSyncMessage)
+    if (!canListen) return undefined
+    const unsubscribe = Build8.PLATFORM_TARGET === 'web'
+      ? subscribeToProject(appKey, handleLocalSyncMessage)
+      : (() => {
+        window.electron.fileWatch.addHandler(appKey, handleLocalSyncMessage)
+        return () => window.electron.fileWatch.removeHandler(appKey)
+      })()
     setFileSyncStatus('listening')
-
-    return () => {
-      window.electron.fileWatch?.removeHandler(appKey)
-    }
+    return unsubscribe
   }, [canListen, appKey])
 
   const canSyncFiles = fileSyncStatus === 'listening'
@@ -311,6 +318,7 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to get file state snapshot:', error)
+      setFileSyncStatus('failed')
     }
   }, [appKey, canSyncFiles])
 
@@ -323,7 +331,7 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
         return
       }
 
-      if (storeWrite) {
+      if (storeWrite && Build8.PLATFORM_TARGET === 'desktop') {
         setPendingWrite(pendingWritesRef, path, 'disk')
       }
       await pushFile(appKey, path, content)
@@ -380,6 +388,10 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
   }
 
   useAbandonableEffect(async (abandon) => {
+    if (Build8.PLATFORM_TARGET === 'web') {
+      setBuildStatus('unavailable')
+      return
+    }
     await abandon(startBuild())
     await refreshServerUrls()
   }, [appKey])
@@ -392,7 +404,7 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
 
   // Close running dev server on unmount
   React.useEffect(() => () => {
-    stopWatchLocal(appKey)
+    if (Build8.PLATFORM_TARGET === 'desktop') stopWatchLocal(appKey)
   }, [appKey])
 
   const canPushToLocal = fileSyncStatus === 'active'
@@ -421,7 +433,8 @@ const LocalSyncContextProvider: React.FC<{children: React.ReactNode}> = ({childr
       await Promise.all(Object.values(filesByPath).map(async ({filePath, isDirectory, content}) => {
         // NOTE(christoph): We never sync assets from redux to disk because they're just placeholder
         // files.
-        if (isDirectory || isAssetPath(filePath)) {
+        if (isDirectory || isAssetPath(filePath) ||
+            (Build8.PLATFORM_TARGET === 'web' && filePath === '.expanse.json')) {
           return
         }
         const prevFile = prevFilesByPath[filePath]

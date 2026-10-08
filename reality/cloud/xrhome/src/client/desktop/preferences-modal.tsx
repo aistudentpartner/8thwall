@@ -44,7 +44,7 @@ const useStyles = createUseStyles({
 const usePreferences = () => useSuspenseQuery({
   queryKey: ['preferences'],
   queryFn: async (): Promise<HubPreferences> => {
-    const res = await fetch('preferences:///current')
+    const res = await fetch(Build8.PLATFORM_TARGET === 'desktop' ? 'preferences:///current' : '/api/preferences/current')
     if (!res.ok) {
       throw new Error('Failed to fetch preferences')
     }

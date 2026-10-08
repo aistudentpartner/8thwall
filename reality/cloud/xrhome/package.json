@@ -18,7 +18,9 @@
     "ts:check-file": "./tools/ts/check-file.sh",
     "sort-translations": "find src/client/i18n/en-US -type f | grep -E \"\\.json$\" | xargs npx ts-node tools/sort-translation.ts",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "build:web": "node scripts/build-web.cjs",
+    "build:web:production": "node scripts/build-web.cjs --production"
   },
   "dependencies": {
     "@babel/runtime": "^7.9.6",

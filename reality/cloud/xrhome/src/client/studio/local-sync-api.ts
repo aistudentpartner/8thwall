@@ -1,3 +1,5 @@
+import {clientId, enqueueFileWrite} from '../web/save-state'
+
 import type {RuntimeMetadata} from '@ecs/shared/runtime-version'
 
 import type {
@@ -10,7 +12,7 @@ import type {RequestInit} from '../common/public-api-fetch'
 import {isAssetPath} from '../common/editor-files'
 import {basename} from '../editor/editor-common'
 
-const API = Build8.PLATFORM_TARGET === 'desktop' ? 'file-sync://' : 'https://0.0.0.0:9033'
+const API = Build8.PLATFORM_TARGET === 'desktop' ? 'file-sync://' : '/api'
 
 type ApiFetchError = Error & {
   res?: Response
@@ -22,7 +24,9 @@ type OpenDiskZipResponse = {
 }
 
 const fetchJson = async <T>(url: string, options?: RequestInit): Promise<T> => {
-  const response = await fetch(url, options)
+  const response = await fetch(url, Build8.PLATFORM_TARGET === 'web'
+    ? {...options, headers: {...options?.headers, 'X-Studio-Client': clientId}}
+    : options)
   if (!response.ok) {
     throw Object.assign(
       new Error(`fetch error status code: ${response.status}, ${response.statusText}`),
@@ -83,10 +87,10 @@ const pushFile = async (
     path,
   })
 
-  return fetchJson<{}>(`${API}/file?${params}`, {
-    method: 'POST',
-    body: content,
-  })
+  const write = () => fetchJson<{}>(`${API}/file?${params}`, {method: 'POST', body: content})
+  return Build8.PLATFORM_TARGET === 'web'
+    ? enqueueFileWrite(`${appKey}/${path}`, write)
+    : write()
 }
 
 const makeLocalAssetUrl = (appKey: string, path: string, version: string | undefined) => (

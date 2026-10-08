@@ -20,6 +20,8 @@ const BuildControlTray: React.FC<IBuildControlTray> = ({nonInteractive}) => {
   const {t} = useTranslation(['cloud-editor-pages', 'common'])
   const classes = useStyles()
 
+  if (Build8.PLATFORM_TARGET === 'web') return null
+
   return (
     <div className={classes.trayContainer}>
       <FloatingTray fillContainer nonInteractive={nonInteractive}>

@@ -48,6 +48,7 @@ const useConsoleActivity = () => {
   useWindowMessageHandler(e => handleMessage(e.data))
 
   React.useEffect(() => {
+    if (Build8.PLATFORM_TARGET !== 'desktop') return undefined
     const handleDevice = (e: ScopedDebugMessage) => {
       if (appKey === e.appKey) {
         handleMessage(e.data)

@@ -31,7 +31,7 @@ const DefaultConfigurator: React.FC<IDefaultConfigurator> = (
           <ProjectSettingsConfigurator
             setPage={setPage}
           />
-          {hasRepo &&
+          {hasRepo && Build8.PLATFORM_TARGET === 'desktop' &&
             <RuntimeVersionConfigurator />
           }
           {hasRepo && BuildIf.MANIFEST_EDIT_20250618 && <ProjectManifestConfigurator />}

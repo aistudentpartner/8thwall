@@ -20,7 +20,9 @@ const useDeviceBroadcast = () => {
 
     // NOTE(christoph): deviceId should be equivalent to sessionId here because sessionId used as
     // both if sessionId is present, which it generally always is.
-    window.electron.dev8Socket.toDevice.dispatch({appKey, sessionId: deviceId, data})
+    if (Build8.PLATFORM_TARGET === 'desktop') {
+      window.electron.dev8Socket.toDevice.dispatch({appKey, sessionId: deviceId, data})
+    }
   }
 
   return sendData

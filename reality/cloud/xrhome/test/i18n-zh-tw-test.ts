@@ -14,7 +14,7 @@ const readLocale = (locale: string, namespace: string): Record<string, string> =
   fs.readFileSync(path.join(localeRoot, locale, `${namespace}.json`), 'utf8')
 )
 const completeNamespaces = [
-  'common', 'cloud-studio-pages', 'studio-desktop-pages', 'caught-error-page',
+  'common', 'cloud-studio-pages', 'studio-desktop-pages', 'caught-error-page', 'browser-studio',
 ]
 
 describe('Traditional Chinese locale', () => {

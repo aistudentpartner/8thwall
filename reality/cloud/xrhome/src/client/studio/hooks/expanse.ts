@@ -1,5 +1,7 @@
 /* eslint react-hooks/exhaustive-deps: error */
 import React from 'react'
+import {markSceneDirty} from '../../web/save-state'
+import {pushFile} from '../local-sync-api'
 import type {DeepReadonly} from 'ts-essentials'
 import type {Expanse, SceneGraph} from '@ecs/shared/scene-graph'
 
@@ -66,13 +68,22 @@ const useExpanse = (): ExpanseHandle => {
     const expanseData = JSON.stringify(newExpanse, null, 2)
     internalState.dirty = false
     internalState.loadedFor = expanseData
+    // Start the durable write before clearing the debounced dirty flag so the
+    // browser's leave-page guard stays active throughout the save.
+    const durableWrite = Build8.PLATFORM_TARGET === 'web'
+      ? pushFile(repo.repoId, EXPANSE_FILE_PATH, expanseData)
+      : Promise.resolve()
+    if (Build8.PLATFORM_TARGET === 'web') markSceneDirty(repo.repoId, false)
     await saveFiles(repo, [
       {filePath: EXPANSE_FILE_PATH, content: expanseData},
     ])
+    // Failed browser writes remain in the retry queue and are surfaced in the status bar.
+    await durableWrite.catch(() => {})
   })
 
   React.useEffect(() => () => {
     stateRef.current = null
+    if (Build8.PLATFORM_TARGET === 'web') markSceneDirty(repo.repoId, false)
     clearTimeout(saveTimeoutRef.current)
   }, [])
 
@@ -96,6 +107,7 @@ const useExpanse = (): ExpanseHandle => {
     }
     setScene(fn)
     stateRef.current.dirty = true
+    if (Build8.PLATFORM_TARGET === 'web') markSceneDirty(repo.repoId, true)
     clearTimeout(saveTimeoutRef.current)
     saveTimeoutRef.current = setTimeout(maybeSaveState, DEBOUNCE_TIME)
   }
