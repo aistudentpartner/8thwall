@@ -4,6 +4,7 @@ module.exports = {
   executableName: '8thWall-Standalone-TW',
   artifactName: '8thWall-TW-Setup-${version}-${arch}.${ext}',
   directories: {output: 'out/standalone'},
+  beforePack: require('./tools/standalone-nsis.cjs'),
   files: ['dist/**/*', 'package.json', '!node_modules/npm/**/*'],
   extraResources: [
     {from: '../../reality/cloud/xrhome/desktop-dist', to: 'desktop-dist'},

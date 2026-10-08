@@ -1,6 +1,7 @@
 // Runs inside the installed application with an isolated profile and temporary projects.
 const {app, BrowserWindow, session, dialog} = require('electron')
 const fs = require('node:fs/promises')
+const fsSync = require('node:fs')
 const path = require('node:path')
 const os = require('node:os')
 const assert = require('node:assert/strict')
@@ -31,8 +32,9 @@ function triangleGlb() {
 }
 
 async function main() {
-  await fs.mkdir(output, {recursive: true})
-  const temp = await fs.mkdtemp(path.join(os.tmpdir(), '8w 繁中離線驗收 '))
+  // Register paths, graphics flags and protocols before yielding to Electron's ready event.
+  fsSync.mkdirSync(output, {recursive: true})
+  const temp = fsSync.mkdtempSync(path.join(os.tmpdir(), '8w 繁中離線驗收 '))
   app.setName('8thWall-Smoke')
   app.setPath('userData', temp)
   app.setPath('documents', temp)
