@@ -10,6 +10,9 @@ import {runServeCommand, runInstallCommand} from './run-commands'
 import {dispatchSystemLog, forwardProcessOutput} from '../system-log/listeners'
 import {startLocalProxy} from './local-proxy'
 import {createDev8WebSocketServer} from '../dev8-socket/dev8-socket-server'
+import {RESOURCES_PATH} from '../core/resources'
+import {ensureOfflineDependencies} from './offline-dependencies'
+import path from 'node:path'
 
 interface LocalServer {
   stop: () => Promise<void>
@@ -30,7 +33,11 @@ const createLocalServer = async (
 ): Promise<LocalServer> => {
   dispatchSystemLog({appKey, type: 'log', text: 'Installing packages'})
   try {
-    await runInstallCommand(appKey, savePath)
+    if (process.env.STANDALONE_MODE === '1') {
+      await ensureOfflineDependencies(savePath, path.join(RESOURCES_PATH, 'offline-template'))
+    } else {
+      await runInstallCommand(appKey, savePath)
+    }
   } catch (err: any) {
     throw Object.assign(err, {reason: 'npm-install'})
   }

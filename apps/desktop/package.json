@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/_start.js",
   "engines": {
-    "node": "22.x"
+    "node": ">=22"
   },
   "scripts": {
     "app:build": "./tools/app-build.sh",
@@ -14,7 +14,12 @@
     "publish:prod:mac": "./tools/app-package.sh publish prod mac",
     "publish:prod:win": "./tools/app-package.sh publish prod win",
     "postinstall": "patch-package",
-    "inliner": "./tools/inliner.sh"
+    "inliner": "./tools/inliner.sh",
+    "standalone:setup": "node tools/standalone-setup.cjs",
+    "standalone:build": "node tools/standalone-build.cjs && node ../../reality/cloud/xrhome/scripts/build-web.cjs --standalone",
+    "standalone:start": "node tools/standalone-launch.cjs",
+    "standalone:package": "npm run standalone:build && electron-builder --config builder.standalone.cjs --win --x64 --publish never",
+    "standalone:test": "node --test test/standalone-*.test.cjs"
   },
   "author": "8th Wall Team",
   "dependencies": {
@@ -46,6 +51,7 @@
     "@types/ws": "^8.18.1",
     "electron": "^38.2.0",
     "electron-builder": "^26.0.12",
+    "esbuild": "0.25.12",
     "patch-package": "^8.0.0",
     "ts-essentials": "^10.2.0"
   }

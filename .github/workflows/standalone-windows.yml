@@ -1,0 +1,41 @@
+name: Windows standalone Traditional Chinese
+on:
+  push:
+    branches: [feat/zh-tw-localization]
+    paths:
+      - 'apps/desktop/**'
+      - 'reality/cloud/xrhome/**'
+      - '.github/workflows/standalone-windows.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and build standalone application
+        run: npm run standalone:setup --prefix apps/desktop
+      - name: Test offline dependency handling
+        run: npm run standalone:test --prefix apps/desktop
+      - name: Test desktop startup, local preview and export without external network
+        working-directory: apps/desktop
+        run: node node_modules/electron/cli.js tools/standalone-smoke.cjs
+      - name: Package Windows installer
+        working-directory: apps/desktop
+        run: node node_modules/electron-builder/cli.js --config builder.standalone.cjs --win --x64 --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 8thWall-TW-Windows-x64
+          path: apps/desktop/out/standalone/*.exe
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: standalone-smoke-diagnostics
+          path: apps/desktop/out/standalone-smoke/
+          if-no-files-found: ignore

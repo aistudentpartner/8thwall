@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>8th Wall 繁體中文工作室</title>
+  <style>
+    html,body {height:100%;margin:0;background:#171721;color:#f4f2ff;font-family:'Microsoft JhengHei',sans-serif}
+    #studio-startup {position:fixed;inset:0;z-index:100000;display:grid;place-content:center;padding:32px;background:#171721}
+    #studio-startup[hidden] {display:none}
+    #studio-startup section {max-width:760px}
+    #studio-startup h1 {font-size:26px}
+    #studio-startup p {line-height:1.8}
+    #startup-detail {white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;color:#ffcaac}
+    #studio-startup button {padding:10px 18px;margin-right:12px;border:0;border-radius:8px;background:#c9b8ff;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div id="studio-startup" role="status"><section>
+    <h1>8th Wall 繁體中文工作室</h1>
+    <p id="startup-message">正在載入工作室，首次啟動可能需要一些時間…</p>
+    <pre id="startup-detail"></pre>
+    <div id="startup-actions" hidden><button onclick="location.reload()">重新載入</button>
+      <button onclick="document.getElementById('studio-startup').hidden=true">查看目前畫面</button></div>
+    <noscript>工作室需要啟用 JavaScript 才能執行。</noscript>
+  </section></div>
+  <script>
+    (function () {
+      var ready = false;
+      function showError(message) {
+        if (ready) return;
+        document.getElementById('startup-message').textContent = '工作室尚未成功啟動。請複製下方訊息，或開啟開發者工具查看錯誤。';
+        document.getElementById('startup-detail').textContent = String(message);
+        document.getElementById('startup-actions').hidden = false;
+      }
+      var timer = setTimeout(function () {showError('載入超過 60 秒。請確認建置已成功完成，並檢查 Console 與 Network 的錯誤。');}, 60000);
+      window.addEventListener('error', function (event) {
+        var target = event.target;
+        if (target && target.tagName === 'SCRIPT') showError('無法載入程式：' + target.src);
+        else if (event.message) showError(event.error && event.error.stack || event.message);
+      }, true);
+      window.addEventListener('unhandledrejection', function (event) {showError(event.reason && event.reason.stack || event.reason);});
+      window.addEventListener('studio-ready', function () {
+        ready = true; clearTimeout(timer); document.getElementById('studio-startup').hidden = true;
+      }, {once:true});
+    })();
+  </script>
+  <div id="<%= htmlWebpackPlugin.options.studioRootId %>"></div>
+</body>
+</html>

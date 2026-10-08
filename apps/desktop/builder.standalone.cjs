@@ -1,0 +1,21 @@
+module.exports = {
+  appId: 'org.aistudentpartner.8thwall.standalone',
+  productName: '8th Wall 繁體中文單機版',
+  executableName: '8thWall-Standalone-TW',
+  artifactName: '8thWall-TW-Setup-${version}-${arch}.${ext}',
+  directories: {output: 'out/standalone'},
+  files: ['dist/**/*', 'package.json', '!node_modules/npm/**/*'],
+  extraResources: [
+    {from: '../../reality/cloud/xrhome/desktop-dist', to: 'desktop-dist'},
+    {from: 'build_package/new-project.zip', to: 'new-project.zip'},
+    {from: 'build_package/offline-template', to: 'offline-template'},
+    {from: 'node_modules/npm', to: 'app.asar.unpacked/node_modules/npm'},
+  ],
+  asar: true,
+  asarUnpack: ['**/node_modules/better-sqlite3/**/*', '**/node_modules/sharp/**/*', '**/node_modules/@img/**/*'],
+  win: {target: [{target: 'nsis', arch: ['x64']}], icon: 'assets/icon.ico', signAndEditExecutable: false},
+  nsis: {oneClick: false, perMachine: false, allowToChangeInstallationDirectory: true,
+    createDesktopShortcut: true, deleteAppDataOnUninstall: false, installerLanguages: ['zh_TW', 'en_US'],
+    language: '1028'},
+  publish: null,
+}

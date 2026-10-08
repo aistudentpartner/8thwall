@@ -17,6 +17,8 @@ import {setResourceBase} from '@ecs/shared/resources'
 import App from './web-app'
 
 import {getHistory, getStore} from '../reducer'
+import {ErrorBoundary} from '../common/error-boundary'
+import {StartupError} from '../startup/startup-status'
 
 const root = document.querySelector('#xrhome-web-root')
 const appRoot = createRoot(root)
@@ -37,12 +39,14 @@ const store = getStore()
 
 appRoot.render(
   <QueryClientProvider client={queryClient}>
-    <React.Suspense fallback={null}>
+    <ErrorBoundary fallback={StartupError}>
+    <React.Suspense fallback={<p style={{padding: 32}}>正在載入工作室…</p>}>
       <JssProvider registry={sheets} generateId={generateId}>
         <Provider store={store}>
           <App history={getHistory()} />
         </Provider>
       </JssProvider>
     </React.Suspense>
+    </ErrorBoundary>
   </QueryClientProvider>
 )

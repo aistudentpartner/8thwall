@@ -45,6 +45,24 @@ const addDevMenu = () => {
 }
 
 const setupMenu = () => {
+  if (process.env.STANDALONE_MODE === '1') {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      {label: '檔案', submenu: [
+        {label: '顯示應用程式紀錄', click: () => shell.showItemInFolder(log.transports.file.getFile()?.path)},
+        {type: 'separator'}, {label: '結束', role: 'quit'},
+      ]},
+      {label: '編輯', submenu: [
+        {label: '復原', role: 'undo'}, {label: '重做', role: 'redo'}, {type: 'separator'},
+        {label: '剪下', role: 'cut'}, {label: '複製', role: 'copy'}, {label: '貼上', role: 'paste'},
+        {label: '全選', role: 'selectAll'},
+      ]},
+      {label: '檢視', submenu: [
+        {label: '重新載入', role: 'reload'}, {label: '開發者工具', role: 'toggleDevTools'},
+        {label: '全螢幕', role: 'togglefullscreen'},
+      ]},
+    ]))
+    return
+  }
   if (process.env.RELEASE) {
     hideToggleDevTools()
   }

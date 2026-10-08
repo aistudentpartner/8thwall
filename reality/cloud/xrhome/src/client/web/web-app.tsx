@@ -12,6 +12,7 @@ import {Brand8QaContextProvider} from '../brand8/brand8-qa-context'
 import {ErrorBoundary} from '../common/error-boundary'
 import {CaughtErrorPage} from '../desktop/caught-error-page'
 import {LOCAL_STUDIO_PATH_FORMAT} from '../desktop/desktop-paths'
+import {StartupReady} from '../startup/startup-status'
 const LocalStudioPage = React.lazy(() => import('../desktop/local-studio-page'))
 const Notice = () => {
   const {t} = useTranslation('browser-studio')
@@ -34,6 +35,7 @@ const Notice = () => {
 }
 const App = withTranslationLoaded(({history}: {history: History}) => (
   <HelmetProvider><Router history={history}>
+    <StartupReady />
     <UiThemeProvider mode='dark'><Brand8QaContextProvider>
       <ErrorBoundary fallback={CaughtErrorPage}>
         <React.Suspense fallback={<p>正在載入工作室…</p>}>
