@@ -10,6 +10,16 @@ const JsZip = require('jszip')
 
 const output = path.resolve('out/standalone-smoke')
 let win
+let stage = 'startup'
+const markStage = value => {
+  stage = value
+  fsSync.writeFileSync(path.join(output, 'stage.txt'), value)
+  console.log('SMOKE_STAGE', value)
+}
+const timed = (promise, milliseconds, label) => new Promise((resolve, reject) => {
+  const timer = setTimeout(() => reject(new Error(`Timed out: ${label} (stage: ${stage})`)), milliseconds)
+  Promise.resolve(promise).then(resolve, reject).finally(() => clearTimeout(timer))
+})
 
 function triangleGlb() {
   const vertices = Buffer.from(new Float32Array([-1, 0, 0, 1, 0, 0, 0, 2, 0]).buffer)
@@ -51,7 +61,11 @@ async function main() {
   app.whenReady().then(() => session.defaultSession.webRequest.onBeforeRequest(
     {urls: ['http://*/*', 'https://*/*', 'ws://*/*', 'wss://*/*']}, (details, callback) => {
       const local = ['localhost', '127.0.0.1', '[::1]'].includes(new URL(details.url).hostname)
-      if (!local) blocked.push(details.url)
+      if (!local) {
+        blocked.push(details.url)
+        console.error('SMOKE_EXTERNAL_REQUEST', details.url)
+        fsSync.writeFileSync(path.join(output, 'blocked.json'), JSON.stringify(blocked, null, 2))
+      }
       callback({cancel: !local})
     }))
   require('../dist/start.js')
@@ -61,7 +75,8 @@ async function main() {
   win.webContents.on('console-message', details => {
     if (details.level === 'error') console.error('Renderer:', details.message)
   })
-  const evaluate = code => win.webContents.executeJavaScript(code)
+  const evaluate = (code, timeout = 60000) => timed(
+    win.webContents.executeJavaScript(code), timeout, code.slice(0, 180))
   async function waitFor(code, timeout = 120000) {
     const end = Date.now() + timeout
     while (Date.now() < end) {
@@ -77,6 +92,7 @@ async function main() {
     assert.match(version, /\d+\.\d+\.\d+/, 'bundled npm includes its transitive dependencies')
   }
   await waitFor("document.querySelector('#app-search') && document.documentElement.lang === 'zh-TW'")
+  markStage('create-project')
   await evaluate(`fetch('preferences:///current', {method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({firstTimeStatus:'complete'})})`)
   const project = await evaluate(`(async () => {
     const response = await fetch('file-sync:///project/init-local?appName=' + encodeURIComponent('繁體中文離線驗收') + '&location=default', {method:'POST'});
@@ -84,6 +100,7 @@ async function main() {
     return response.json();
   })()`)
   assert.ok(project.appKey)
+  markStage('import-model')
   win.webContents.send('navigate-to-path', `/local-studio/${project.appKey}`)
   await waitFor("document.body.innerText.includes('方塊') && document.querySelector('#studio-scene-viewport canvas') && document.querySelector('#studio-import-model:not(:disabled)')")
   const model = triangleGlb()
@@ -109,6 +126,7 @@ async function main() {
   win.webContents.debugger.detach()
   await waitFor("!!document.querySelector('[title=\"offline-model.glb\"]')")
   assert.deepEqual(await fs.readFile(path.join(project.projectPath, 'src/assets/offline-model.glb')), model)
+  markStage('place-model-in-scene')
   // Drag the imported asset into the editor through its normal React handlers.
   await evaluate(`(() => {
     const row = document.querySelector('[title="offline-model.glb"]').closest('button');
@@ -125,6 +143,7 @@ async function main() {
   })()`)
   const sceneFile = path.join(project.projectPath, 'src/.expanse.json')
   assert.match(await fs.readFile(sceneFile, 'utf8'), /assets\/offline-model\.glb/)
+  markStage('start-preview-server')
   await waitFor(`(async () => {
     const r = await fetch('file-sync:///project/project-status?appKey=${project.appKey}');
     const status = await r.json(); return Boolean(status.buildUrl);
@@ -136,15 +155,17 @@ async function main() {
   const previewAsset = await fetch(`${status.buildUrl}/assets/offline-model.glb`)
   assert.equal(previewAsset.status, 200)
   assert.deepEqual(Buffer.from(await previewAsset.arrayBuffer()), model)
+  markStage('play-preview')
   await waitFor("document.querySelector('#studio-debug-sessions-menu-play-pause-button')")
   await evaluate("document.querySelector('#studio-debug-sessions-menu-play-pause-button').click()")
   let previewRendered = false
   const previewDeadline = Date.now() + 120000
   while (Date.now() < previewDeadline) {
     const frame = win.webContents.mainFrame.framesInSubtree.find(f => f.url.startsWith(status.buildUrl))
-    previewRendered = frame && await frame.executeJavaScript(`Boolean(window.ecs &&
+    previewRendered = frame && await timed(frame.executeJavaScript(`Boolean(window.ecs &&
       Array.from(document.querySelectorAll('canvas')).some(c => c.width > 0 && c.height > 0) &&
-      performance.getEntriesByType('resource').some(r => r.name.includes('offline-model.glb')))`)
+      performance.getEntriesByType('resource').some(r => r.name.includes('offline-model.glb')))`),
+      5000, 'preview frame response')
       .catch(() => false)
     if (previewRendered) break
     await new Promise(resolve => setTimeout(resolve, 300))
@@ -152,7 +173,11 @@ async function main() {
   assert.ok(previewRendered, `Play must load the model in the embedded preview: ${JSON.stringify({
     frames: win.webContents.mainFrame.framesInSubtree.map(f => f.url), blocked,
   })}`)
-  await fs.writeFile(path.join(output, 'editor.png'), (await win.webContents.capturePage()).toPNG())
+  await fs.writeFile(path.join(output, 'editor.png'),
+    (await timed(win.webContents.capturePage(), 10000, 'preview screenshot')).toPNG())
+  // Release the software-rendered player before testing export on the CI machine.
+  await evaluate("document.querySelector('#studio-debug-sessions-menu-play-pause-button').click()")
+  markStage('reopen-project')
   // Reload verifies that imported assets and scene references were persisted, not just in memory.
   win.webContents.reload()
   // Desktop routing is in memory: a full reload returns to the project list.
@@ -160,19 +185,22 @@ async function main() {
   win.webContents.send('navigate-to-path', `/local-studio/${project.appKey}`)
   await waitFor("document.querySelector('[title=\"offline-model.glb\"]') && document.querySelector('#studio-scene-viewport canvas')")
   assert.match(await fs.readFile(sceneFile, 'utf8'), /assets\/offline-model\.glb/)
+  markStage('export-project')
   const zipBase64 = await evaluate(`(async () => {
     const r = await fetch('file-sync:///project/build?appKey=${project.appKey}', {method:'POST'});
     if (!r.ok) throw new Error(await r.text());
-    return new Promise(resolve => {
-      r.blob().then(blob => { const reader = new FileReader(); reader.onload=()=>resolve(reader.result.split(',')[1]); reader.readAsDataURL(blob); });
+    const blob = await r.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader(); reader.onload=()=>resolve(reader.result.split(',')[1]);
+      reader.onerror=()=>reject(reader.error); reader.readAsDataURL(blob);
     });
-  })()`)
+  })()`, 600000)
   const zipData = Buffer.from(zipBase64, 'base64')
   const zip = await JsZip.loadAsync(zipData)
   const exportedModel = Object.keys(zip.files).find(name => name.endsWith('assets/offline-model.glb'))
   assert.ok(exportedModel, 'model included in project ZIP')
   assert.deepEqual(await zip.file(exportedModel).async('nodebuffer'), model)
-  assert.equal(blocked.length, 0, 'core flow must not request external web services')
+  assert.equal(blocked.length, 0, `core flow must not request external web services: ${JSON.stringify(blocked)}`)
   const result = {passed: true, packaged: app.isPackaged, version: app.getVersion(),
     modelImported: true, scenePersisted: true, previewRendered,
     preview: status.buildUrl, zipSize: zipData.length, blocked}
@@ -181,13 +209,22 @@ async function main() {
   console.log('STANDALONE_SMOKE_PASSED', result)
   app.exit(0)
 }
-main().catch(async error => {
+timed(main(), 900000, 'complete installed application test').catch(async error => {
   console.error(error)
   await fs.mkdir(output, {recursive: true})
   await fs.writeFile(path.join(output, 'failure.txt'), String(error.stack || error))
-  if (win && !win.isDestroyed()) {
-    await fs.writeFile(path.join(output, 'failure.png'), (await win.webContents.capturePage()).toPNG())
-    await fs.writeFile(path.join(output, 'page.txt'), await win.webContents.executeJavaScript('document.body.innerText'))
+  try {
+    if (win && !win.isDestroyed()) {
+      await fs.writeFile(path.join(output, 'failure.png'),
+        (await timed(win.webContents.capturePage(), 5000, 'failure screenshot')).toPNG())
+      await fs.writeFile(path.join(output, 'page.txt'),
+        await timed(win.webContents.executeJavaScript('document.body.innerText'), 5000, 'failure page text'))
+    }
+  } catch (captureError) {
+    console.error('Diagnostics:', captureError)
   }
-  app.exit(1)
+  // Let the app stop project servers before exiting; the watchdog also covers an unresponsive UI.
+  app.once('will-quit', () => app.exit(1))
+  setTimeout(() => app.exit(1), 5000)
+  app.quit()
 })

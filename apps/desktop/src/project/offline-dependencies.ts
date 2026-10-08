@@ -6,6 +6,21 @@ const dependencySet = (pkg: any) => JSON.stringify(Object.entries({
   ...pkg.dependencies, ...pkg.devDependencies,
 }).sort(([a], [b]) => a.localeCompare(b)))
 
+// The published dev8 HUD injects Google Fonts links whenever preview opens.
+// Use its existing monospace fallback in standalone mode, including older projects.
+const prepareOfflinePreview = async (modules: string) => {
+  const dev8 = path.join(modules, '@8thwall/ecs/dev8/dev8.js')
+  let source: string
+  try {
+    source = await fs.readFile(dev8, 'utf8')
+  } catch (error: any) {
+    if (error.code === 'ENOENT') return
+    throw error
+  }
+  const offline = source.replace(/<link\b[^>]*https:\/\/fonts\.(?:googleapis|gstatic)\.com[^>]*>/g, '')
+  if (offline !== source) await fs.writeFile(dev8, offline)
+}
+
 // Only copy the bundled dependency set into compatible projects. Opening a project
 // never downloads or upgrades packages; a deliberate Install action still can.
 const ensureOfflineDependencies = async (projectDir: string, templateDir: string) => {
@@ -19,7 +34,10 @@ const ensureOfflineDependencies = async (projectDir: string, templateDir: string
   const installed = (await Promise.all(required.map(name =>
     fs.access(path.join(modules, name, 'package.json')).then(() => true, () => false))))
     .every(Boolean)
-  if (installed) return
+  if (installed) {
+    await prepareOfflinePreview(modules)
+    return
+  }
   if (dependencySet(project) !== dependencySet(template)) {
     throw new Error('此專案需要額外套件。請連線後在專案選單執行「安裝套件」，完成後即可離線開啟。')
   }
@@ -41,6 +59,7 @@ const ensureOfflineDependencies = async (projectDir: string, templateDir: string
   } finally {
     await fs.rm(staging, {recursive: true, force: true})
   }
+  await prepareOfflinePreview(modules)
 }
 
 export {ensureOfflineDependencies}

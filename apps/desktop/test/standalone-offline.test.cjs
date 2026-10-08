@@ -78,3 +78,23 @@ test('an incomplete application bundle explains how to recover without changing 
   assert.equal(await fs.readFile(path.join(project, 'scene.json'), 'utf8'), 'keep my scene')
   await assert.rejects(fs.access(path.join(project, 'node_modules')))
 })
+
+test('new and existing previews use local fonts while preserving the dev8 script', async t => {
+  const {project, template} = await fixture(t)
+  const relative = 'node_modules/@8thwall/ecs/dev8/dev8.js'
+  const script = `module.exports='<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@700&display=swap" rel="stylesheet"><link href="./local.css" rel="stylesheet">';`
+  await fs.mkdir(path.dirname(path.join(template, relative)), {recursive: true})
+  await fs.writeFile(path.join(template, relative), script)
+  await ensureOfflineDependencies(project, template)
+  const check = async () => {
+    const content = await fs.readFile(path.join(project, relative), 'utf8')
+    assert.ok(!content.includes('fonts.googleapis.com'))
+    assert.match(content, /local\.css/)
+    assert.equal(require(path.join(project, relative)), '<link href="./local.css" rel="stylesheet">')
+  }
+  await check()
+  // An older project already has its dependencies, but still needs the font fix.
+  await fs.writeFile(path.join(project, relative), script)
+  await ensureOfflineDependencies(project, template)
+  await check()
+})

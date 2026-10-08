@@ -30,7 +30,9 @@ const FloatingNavigation: React.FC = () => {
         isDisabled={!!sync && sync.fileSyncStatus !== 'active'}
         onClick={() => onUploadStart('assets')}
       >
-        {t('model_import.button', {ns: 'cloud-studio-pages'})}
+        <span style={{whiteSpace: 'nowrap'}}>
+          {t('model_import.button', {ns: 'cloud-studio-pages'})}
+        </span>
       </FloatingTrayButton>
     </FloatingTray>
   )
