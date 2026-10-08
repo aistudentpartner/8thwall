@@ -26,11 +26,15 @@ const {app, dialog} = require('electron')
 const path = require('node:path')
 app.setName('8th Wall 繁體中文單機版')
 app.setPath('userData', path.join(app.getPath('appData'), '8thWall-Standalone-TW'))
-try { require('./start.js') } catch (error) {
+try {
+  require(process.argv.includes('--standalone-smoke-test') ? './standalone-smoke.cjs' : './start.js')
+} catch (error) {
   dialog.showErrorBox('工作室啟動失敗', String(error.stack || error))
   app.exit(1)
 }
 `)
+  await fs.copyFile(path.join(root, 'tools/standalone-smoke.cjs'),
+    path.join(root, 'dist/standalone-smoke.cjs'))
 
   const template = path.join(root, 'new-project')
   const zip = new JsZip()

@@ -31,7 +31,8 @@ const createLocalServer = async (
   appKey: string,
   savePath: string
 ): Promise<LocalServer> => {
-  dispatchSystemLog({appKey, type: 'log', text: 'Installing packages'})
+  dispatchSystemLog({appKey, type: 'log', text: process.env.STANDALONE_MODE === '1'
+    ? '正在準備本機離線套件，首次開啟可能需要一段時間。' : 'Installing packages'})
   try {
     if (process.env.STANDALONE_MODE === '1') {
       await ensureOfflineDependencies(savePath, path.join(RESOURCES_PATH, 'offline-template'))
@@ -46,20 +47,20 @@ const createLocalServer = async (
     getPort({port: portNumbers(59000, 59999)}),
     getPort({port: portNumbers(60000, 60999)}),
   ])
-  dispatchSystemLog({appKey, type: 'log', text: 'Starting build server'})
+  dispatchSystemLog({appKey, type: 'log', text: '正在啟動本機預覽伺服器。'})
   const webpackDevServer = runServeCommand(savePath, buildPort)
   const dev8Socket = createDev8WebSocketServer(appKey, dev8SocketPort)
   forwardProcessOutput(appKey, webpackDevServer.nodeChildProcess)
   const proxy = startLocalProxy({primaryPort, buildPort, dev8SocketPort})
+  const dispatcher = new Agent({bodyTimeout: 1000})
 
   const localServerCheck = async () => {
     try {
       const res = await fetch(`${LOCAL_BUILD_URL_BASE}${primaryPort}`, {
         signal: AbortSignal.timeout(1000),
-        dispatcher: new Agent({
-          bodyTimeout: 1000,
-        }),
+        dispatcher,
       })
+      await res.body?.cancel()
       return res.status === 200
     } catch {
       return false
@@ -82,6 +83,7 @@ const createLocalServer = async (
   }
 
   const handleStop = async () => {
+    await dispatcher.destroy()
     proxy.stop()
     dev8Socket.close()
     if (webpackDevServer) {

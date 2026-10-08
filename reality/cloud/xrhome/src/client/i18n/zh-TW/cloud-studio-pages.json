@@ -1153,5 +1153,9 @@
   "viewport_control_tray.button.unlit_draw_mode": "不受光繪製模式",
   "viewport_control_tray.button.shaded_draw_mode": "光影繪製模式",
   "viewport_control_tray.button.perspective_camera_view": "透視攝影機視角",
-  "viewport_control_tray.button.orthographic_camera_view": "正交攝影機視角"
+  "viewport_control_tray.button.orthographic_camera_view": "正交攝影機視角",
+  "model_import.button": "匯入模型",
+  "model_import.hint": "按左上角「匯入模型」選擇 GLB，匯入後將素材拖曳至場景。建議使用包含貼圖的單一 GLB 檔。",
+  "local_preview.failed": "本機預覽啟動失敗",
+  "local_preview.retry": "重新啟動本機預覽"
 }

@@ -23,6 +23,11 @@ const ensureOfflineDependencies = async (projectDir: string, templateDir: string
   if (dependencySet(project) !== dependencySet(template)) {
     throw new Error('此專案需要額外套件。請連線後在專案選單執行「安裝套件」，完成後即可離線開啟。')
   }
+  try {
+    await fs.access(path.join(templateDir, 'node_modules'))
+  } catch {
+    throw new Error('安裝檔缺少離線預覽套件。請更新單機版後重新開啟專案；不需要連線至雲端伺服器。')
+  }
   const staging = path.join(projectDir, `.standalone-deps-${createHash('sha256').update(lock).digest('hex').slice(0, 12)}`)
   await fs.rm(staging, {recursive: true, force: true})
   try {

@@ -22,12 +22,26 @@ jobs:
         run: npm run standalone:setup --prefix apps/desktop
       - name: Test offline dependency handling
         run: npm run standalone:test --prefix apps/desktop
-      - name: Test desktop startup, local preview and export without external network
-        working-directory: apps/desktop
-        run: node node_modules/electron/cli.js tools/standalone-smoke.cjs
       - name: Package Windows installer
         working-directory: apps/desktop
         run: node node_modules/electron-builder/cli.js --config builder.standalone.cjs --win --x64 --publish never
+      - name: Install and test packaged application without system Node or external web access
+        working-directory: apps/desktop
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem out/standalone/8thWall-TW-Setup-*-x64.exe | Select-Object -First 1).FullName
+          $installDir = Join-Path $env:RUNNER_TEMP '8w-smoke-install'
+          $setup = Start-Process -FilePath $installer -ArgumentList '/S', "/D=$installDir" -Wait -PassThru
+          if ($setup.ExitCode -ne 0) { throw "Installer failed: $($setup.ExitCode)" }
+          New-Item -ItemType Directory -Force out/standalone-smoke | Out-Null
+          $env:PATH = "$env:SystemRoot\System32;$env:SystemRoot"
+          $app = Start-Process -FilePath (Join-Path $installDir '8thWall-Standalone-TW.exe') -ArgumentList '--standalone-smoke-test' -PassThru -RedirectStandardOutput out/standalone-smoke/stdout.log -RedirectStandardError out/standalone-smoke/stderr.log
+          if (-not $app.WaitForExit(600000)) { $app.Kill(); throw 'Installed application test timed out' }
+          Get-Content out/standalone-smoke/stdout.log
+          Get-Content out/standalone-smoke/stderr.log
+          if ($app.ExitCode -ne 0) { throw "Installed application failed: $($app.ExitCode)" }
+          $result = Get-Content out/standalone-smoke/result.json | ConvertFrom-Json
+          if (-not ($result.passed -and $result.packaged -and $result.modelImported -and $result.scenePersisted)) { throw 'Packaged test did not pass' }
       - uses: actions/upload-artifact@v4
         with:
           name: 8thWall-TW-Windows-x64

@@ -278,12 +278,14 @@ const startWatch = withErrorHandlingResponse(async (req: Request) => {
       appKeyToLocalServerManager.set(appKey, newManager)
       const running = await newManager.waitForServerReady()
       if (!running) {
-        throw new Error('Failed to start local server')
+        await newManager.stop()
+        appKeyToLocalServerManager.delete(appKey)
+        throw new Error('本機預覽未能啟動。請查看底部記錄，再按「重新啟動本機預覽」。')
       }
       return makeJsonResponse({})
     } catch (error: any) {
       if (error.reason === 'npm-install') {
-        return makeJsonResponse({message: 'NPM installation failed', reason: 'npm-install'}, 500)
+        return makeJsonResponse({message: error.message, reason: 'npm-install'}, 500)
       }
       log.info(`Error starting local server: ${error}`)
       throw makeCodedError(`Failed to start watch server: ${error.message}`, 500)

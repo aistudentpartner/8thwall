@@ -8,9 +8,9 @@ module.exports = {
   extraResources: [
     {from: '../../reality/cloud/xrhome/desktop-dist', to: 'desktop-dist'},
     {from: 'build_package/new-project.zip', to: 'new-project.zip'},
-    {from: 'build_package/offline-template', to: 'offline-template'},
-    {from: 'node_modules/npm', to: 'app.asar.unpacked/node_modules/npm'},
   ],
+  // extraResources prunes nested node_modules; these are complete executable toolchains.
+  afterPack: require('./tools/standalone-after-pack.cjs'),
   asar: true,
   asarUnpack: ['**/node_modules/better-sqlite3/**/*', '**/node_modules/sharp/**/*', '**/node_modules/@img/**/*'],
   win: {target: [{target: 'nsis', arch: ['x64']}], icon: 'assets/icon.ico', signAndEditExecutable: false},

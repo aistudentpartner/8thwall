@@ -220,7 +220,7 @@ const DevSocketFixRecommendation = () => {
 const RetryInstallRecommendation = () => {
   const {t} = useTranslation(['cloud-studio-pages', 'common'])
   const localSyncContext = useLocalSyncContext()
-  const visible = localSyncContext.buildStatus === 'npm-install-failed'
+  const visible = ['npm-install-failed', 'failed'].includes(localSyncContext.buildStatus)
 
   if (!visible) {
     return null
@@ -229,10 +229,11 @@ const RetryInstallRecommendation = () => {
   return (
     <StaticBanner type='danger'>
       <SpaceBetween direction='vertical'>
-        {t('recommendation_box.npm_install_failed_message')}
+        <strong>{t('local_preview.failed')}</strong>
+        <span role='alert'>{localSyncContext.buildError}</span>
         <SpaceBetween>
-          <BoldButton onClick={async () => localSyncContext.restartServer()}>
-            {t('button.try_again', {ns: 'common'})}
+          <BoldButton onClick={() => localSyncContext.restartServer().catch(() => {})}>
+            {t('local_preview.retry')}
           </BoldButton>
         </SpaceBetween>
       </SpaceBetween>

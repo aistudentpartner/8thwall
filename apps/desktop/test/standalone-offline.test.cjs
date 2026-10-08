@@ -70,3 +70,11 @@ test('already installed custom dependencies can run offline', async t => {
   await ensureOfflineDependencies(project, template)
   await assert.rejects(fs.access(path.join(project, 'node_modules/demo')))
 })
+
+test('an incomplete application bundle explains how to recover without changing project files', async t => {
+  const {project, template} = await fixture(t)
+  await fs.rm(path.join(template, 'node_modules'), {recursive: true})
+  await assert.rejects(ensureOfflineDependencies(project, template), /安裝檔缺少離線預覽套件/)
+  assert.equal(await fs.readFile(path.join(project, 'scene.json'), 'utf8'), 'keep my scene')
+  await assert.rejects(fs.access(path.join(project, 'node_modules')))
+})
