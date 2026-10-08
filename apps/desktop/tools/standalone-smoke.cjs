@@ -58,6 +58,9 @@ async function main() {
   await app.whenReady()
   win = BrowserWindow.getAllWindows()[0]
   assert.ok(win, 'desktop window created')
+  win.webContents.on('console-message', details => {
+    if (details.level === 'error') console.error('Renderer:', details.message)
+  })
   const evaluate = code => win.webContents.executeJavaScript(code)
   async function waitFor(code, timeout = 120000) {
     const end = Date.now() + timeout
@@ -133,6 +136,7 @@ async function main() {
   const previewAsset = await fetch(`${status.buildUrl}/assets/offline-model.glb`)
   assert.equal(previewAsset.status, 200)
   assert.deepEqual(Buffer.from(await previewAsset.arrayBuffer()), model)
+  await waitFor("document.querySelector('#studio-debug-sessions-menu-play-pause-button')")
   await evaluate("document.querySelector('#studio-debug-sessions-menu-play-pause-button').click()")
   let previewRendered = false
   const previewDeadline = Date.now() + 120000
