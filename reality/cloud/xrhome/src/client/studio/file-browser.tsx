@@ -85,6 +85,12 @@ const useStyles = createThemedStyles(theme => ({
   importModuleButton: {
     margin: '0.5em 1em',
   },
+  importHint: {
+    margin: '0 0.75rem 0.5rem',
+    color: theme.fgMuted,
+    fontSize: '12px',
+    lineHeight: '1.5',
+  },
   searchBarContainer: {
     'padding': '0 0.75rem 0.5rem',
     'display': 'flex',
@@ -206,21 +212,6 @@ const FileBrowser: React.FC<IFileBrowser> = ({
           currentEditorFileLocation={activeFileLocation}
           grow
         />
-        <input
-          className='hidden-input'
-          type='file'
-          accept='*'
-          ref={uploadDropRef}
-          onChange={handleFileUpload}
-          value=''
-          multiple
-        />
-        <FileUploadProgressBar
-          numFileUploading={uploadFiles.length}
-          totalNumFiles={uploadTotalNumFiles}
-          bytesUploaded={uploadBytesUploaded}
-          totalBytes={uploadTotalBytes}
-        />
       </FileTreeContainer>
     )
 
@@ -237,6 +228,28 @@ const FileBrowser: React.FC<IFileBrowser> = ({
 
   return (
     <div className={combine(classes.fileBrowser, isStudio && studioStyles.studioFont)}>
+      {/* Keep the picker mounted even while searching or viewing another asset tab. */}
+      <input
+        id='studio-asset-upload'
+        className='hidden-input'
+        type='file'
+        accept='*'
+        ref={uploadDropRef}
+        onChange={(event) => {
+          handleSectionClick('files')
+          setSearchValue('')
+          setFilters([])
+          handleFileUpload(event)
+        }}
+        value=''
+        multiple
+      />
+      <FileUploadProgressBar
+        numFileUploading={uploadFiles.length}
+        totalNumFiles={uploadTotalNumFiles}
+        bytesUploaded={uploadBytesUploaded}
+        totalBytes={uploadTotalBytes}
+      />
       <div className={combine(classes.sectionTitleContainer, classes.sectionTitleHorizontal)}>
         <button
           a8='click;studio;file-browser-files-tab'
@@ -328,6 +341,11 @@ const FileBrowser: React.FC<IFileBrowser> = ({
             setExternalItemType={setExternalItemType}
           />
         </div>
+      }
+      {currentSection === 'files' && isStudio &&
+        <p className={classes.importHint}>
+          {t('model_import.hint', {ns: 'cloud-studio-pages'})}
+        </p>
       }
       {((!searchValue && filters.length === 0) || externalItemType)
         ? (

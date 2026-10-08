@@ -522,6 +522,7 @@ const SceneEdit: React.FC<ISceneEdit> = ({
                 {!hideViewport &&
                   <ErrorBoundary fallback={CaughtViewportError}>
                     <Canvas
+                      id='studio-scene-viewport'
                       frameloop='demand'
                       ref={menuState.refs.setReference}
                       {...menuState.getReferenceProps()}

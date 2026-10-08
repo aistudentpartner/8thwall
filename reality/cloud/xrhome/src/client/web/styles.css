@@ -1,0 +1,28 @@
+html, body, #xrhome-web-root {height: 100%; margin: 0;}
+#xrhome-web-root {display: flex; flex-direction: column; background: #14141a; color: #f5f5fa;}
+#xrhome-web-root {font-family: 'Geist', 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif; overflow: hidden;}
+.web-home {width: min(100%, 1180px); margin: 0 auto; padding: 64px 32px; overflow-y: auto;}
+.web-home h1 {font: 600 36px/1.4 inherit; font-size: 36px; margin: 12px 0;}
+.web-home h2 {font-size: 20px; margin-top: 36px;}
+.web-eyebrow {letter-spacing: .18em; color: #b5a3fd; font-size: 12px; font-weight: 700;}
+.web-intro, .web-project p, .web-empty, .web-note {color: #bcbccf; line-height: 1.8;}
+.web-create {border: 1px solid #41414e; border-radius: 14px; padding: 24px; margin: 32px 0; background: #1d1d26;}
+.web-create label {display: block; margin-bottom: 10px;}
+.web-create > div {display: flex; gap: 12px;}
+.web-create input {flex: 1; min-width: 0; color: inherit; background: #121219; border: 1px solid #555568; border-radius: 8px; padding: 12px; font: inherit;}
+.web-home button, .web-notice button {border: 0; border-radius: 8px; background: #baa8ff; color: #171023; padding: 12px 18px; font: inherit; font-weight: 600; cursor: pointer;}
+.web-home button:disabled {opacity: .5; cursor: wait;}
+.web-home button:focus-visible, .web-create input:focus-visible {outline: 3px solid #d1c4ff; outline-offset: 3px;}
+.web-home button.web-secondary {background: transparent; color: #cac3df;}
+.web-projects {display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;}
+.web-project {padding: 24px; border: 1px solid #41414e; border-radius: 14px; background: #1d1d26; overflow-wrap: anywhere;}
+.web-project h3 {margin: 0; font-size: 20px;}
+.web-project button + button {margin-left: 8px;}
+.web-note {margin-top: 32px; font-size: 13px; max-width: 850px;}
+.web-notice {flex: 0 0 auto; background: #282236; padding: 8px 16px; font-size: 12px; display: flex; justify-content: space-between; align-items: center; gap: 16px;}
+.web-notice button {padding: 4px 10px; font-size: 12px;}
+.web-sync-error {padding: 32px;}
+@media (max-width: 600px) {.web-home {padding: 28px 18px;} .web-create > div {flex-direction: column;}}
+#xrhome-web-root > .studio-editor {flex: 1 1 0; min-height: 0;}
+.web-language {float: right; display: flex; align-items: center; gap: 8px;}
+.web-language select {background: #1d1d26; border: 1px solid #555568; color: inherit; border-radius: 8px; padding: 8px; font: inherit;}

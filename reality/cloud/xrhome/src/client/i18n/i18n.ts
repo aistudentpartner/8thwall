@@ -12,6 +12,13 @@ import {chooseDefaultLanguage} from './choose-default-language'
 
 const I18N_DEBUG = false
 
+// Keep screen readers and CJK font selection in sync with the active UI language.
+i18n.on('languageChanged', (language) => {
+  if (typeof document !== 'undefined') {
+    document.documentElement.lang = language
+  }
+})
+
 if (BuildIf.LOCAL) {
   i18n.use(BrokenKeyAlertPlugin)
 }

@@ -1153,5 +1153,9 @@
   "viewport_control_tray.button.unlit_draw_mode": "Unlit Draw Mode",
   "viewport_control_tray.button.shaded_draw_mode": "Shaded Draw Mode",
   "viewport_control_tray.button.perspective_camera_view": "Perspective Camera View",
-  "viewport_control_tray.button.orthographic_camera_view": "Orthographic Camera View"
+  "viewport_control_tray.button.orthographic_camera_view": "Orthographic Camera View",
+  "model_import.button": "Import model",
+  "model_import.hint": "Choose Import model, select a GLB, then drag the asset into the scene. A single GLB with embedded textures is recommended.",
+  "local_preview.failed": "Local preview failed to start",
+  "local_preview.retry": "Restart local preview"
 }

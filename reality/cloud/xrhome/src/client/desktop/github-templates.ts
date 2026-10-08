@@ -1,5 +1,5 @@
 /* eslint-disable local-rules/hardcoded-copy, @stylistic/max-len */
-const GITHUB_TEMPLATES = [
+const GITHUB_TEMPLATES = Build8.VERSION_ID === 'standalone-tw' ? [] : [
   {
     title: 'World Effects',
     zipUrl: 'https://github.com/8thwall/studio-world-effects-example/archive/refs/heads/main.zip',

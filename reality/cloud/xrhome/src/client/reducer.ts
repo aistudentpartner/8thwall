@@ -2,7 +2,7 @@ import {createLogger} from 'redux-logger'
 import thunk from 'redux-thunk'
 import {combineReducers, Middleware} from 'redux'
 import {RouterState, createReduxHistoryContext} from 'redux-first-history'
-import {createMemoryHistory} from 'history'
+import {createBrowserHistory, createMemoryHistory} from 'history'
 
 import {configureStore, EnhancedStore} from '@reduxjs/toolkit'
 
@@ -12,7 +12,9 @@ import {FULL_STACK_REDUCERS} from './full-stack-reducers'
 
 const VERBOSE_LOGGING = false
 
-const history = createMemoryHistory()
+const history = Build8.PLATFORM_TARGET === 'web' && typeof window !== 'undefined'
+  ? createBrowserHistory()
+  : createMemoryHistory()
 
 // Scroll to the top on every history change
 if (typeof window !== 'undefined') {

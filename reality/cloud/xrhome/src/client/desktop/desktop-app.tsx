@@ -19,6 +19,7 @@ import {NotFoundPage} from './not-found-page'
 import {DesktopWithTopBar} from './desktop-top-bar'
 import {Brand8QaContextProvider} from '../brand8/brand8-qa-context'
 import {useTheme} from '../user/use-theme'
+import {StartupReady} from '../startup/startup-status'
 
 const LocalStudioPage = React.lazy(() => import('./local-studio-page'))
 
@@ -65,6 +66,7 @@ const InnerApp: React.FC = () => {
 
   return (
     <UiThemeProvider mode={theme}>
+      <StartupReady />
       <Brand8QaContextProvider>
         <DesktopWithTopBar windowTitle={undefined}>
           <ErrorBoundary fallback={CaughtErrorPage}>

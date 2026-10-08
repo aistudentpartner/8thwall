@@ -14,17 +14,23 @@ const startLocalProxy = ({primaryPort, buildPort, dev8SocketPort}: LocalProxyOpt
     changeOrigin: true,
   })
 
-  const server = createServer((req, res) => proxy.web(req, res))
+  const server = createServer((req, res) => {
+    proxy.web(req, res).catch(() => {
+      if (!res.headersSent) res.writeHead(503, {'Content-Type': 'text/plain; charset=utf-8'})
+      res.end('本機預覽正在啟動，請稍候。')
+    })
+  })
 
   server.on('upgrade', (req, socket, head) => {
     if (req.url?.startsWith('/dev8')) {
       proxyUpgrade(`http://localhost:${dev8SocketPort}`, req, socket, head)
+        .catch(() => socket.destroy())
       return
     }
 
     proxyUpgrade(`http://localhost:${buildPort}${req.url}`, req, socket, head, {
       headers: {Host: 'https://localhost', Origin: 'https://localhost'},
-    })
+    }).catch(() => socket.destroy())
   })
 
   server.listen(primaryPort, () => {

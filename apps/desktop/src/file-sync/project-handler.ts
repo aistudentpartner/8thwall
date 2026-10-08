@@ -1,5 +1,4 @@
 import {dialog, shell, app} from 'electron'
-import os from 'os'
 import path from 'path'
 import fs from 'fs/promises'
 import log from 'electron-log'
@@ -44,6 +43,8 @@ import {projectSetup, unzipIntoFolder} from './create-project-files'
 import {createLocalServer, LocalServer} from '../project/local-server'
 import {openInCodeEditor} from '../preferences/code-editor'
 import {runBuildCommand, runInstallCommand} from '../project/run-commands'
+import {ensureOfflineDependencies} from '../project/offline-dependencies'
+import {RESOURCES_PATH} from '../core/resources'
 import {branches, methods, RequestHandler} from '../transport/requests'
 
 const locationPrompt = async (): Promise<string | undefined> => {
@@ -80,7 +81,7 @@ const getLocalProjectLocation = withErrorHandlingResponse(async (req: Request) =
 
   let outerFolder: string
   if (params.data.location === 'default') {
-    outerFolder = path.join(os.homedir(), 'Documents', app.getName())
+    outerFolder = path.join(app.getPath('documents'), app.getName())
   } else {
     const selectedFolder = await locationPrompt()
     if (!selectedFolder) {
@@ -277,12 +278,14 @@ const startWatch = withErrorHandlingResponse(async (req: Request) => {
       appKeyToLocalServerManager.set(appKey, newManager)
       const running = await newManager.waitForServerReady()
       if (!running) {
-        throw new Error('Failed to start local server')
+        await newManager.stop()
+        appKeyToLocalServerManager.delete(appKey)
+        throw new Error('本機預覽未能啟動。請查看底部記錄，再按「重新啟動本機預覽」。')
       }
       return makeJsonResponse({})
     } catch (error: any) {
       if (error.reason === 'npm-install') {
-        return makeJsonResponse({message: 'NPM installation failed', reason: 'npm-install'}, 500)
+        return makeJsonResponse({message: error.message, reason: 'npm-install'}, 500)
       }
       log.info(`Error starting local server: ${error}`)
       throw makeCodedError(`Failed to start watch server: ${error.message}`, 500)
@@ -349,7 +352,11 @@ const buildZip = withErrorHandlingResponse(async (req: Request) => {
     throw makeCodedError('Project for appKey not found', 404)
   }
 
-  await runInstallCommand(project.appKey, project.location)
+  if (process.env.STANDALONE_MODE === '1') {
+    await ensureOfflineDependencies(project.location, path.join(RESOURCES_PATH, 'offline-template'))
+  } else {
+    await runInstallCommand(project.appKey, project.location)
+  }
   await runBuildCommand(project.appKey, project.location)
 
   const distPath = path.join(project.location, 'dist')

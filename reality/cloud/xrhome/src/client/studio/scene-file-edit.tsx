@@ -45,13 +45,13 @@ const SceneFileEdit: React.FC<ISceneFileEdit> = ({simulatorId, ...rest}) => {
     <YogaParentContextProvider>
       <SceneEdit
         hideViewport={inFullscreenSimulator}
-        playbackControls={(
+        playbackControls={Build8.PLATFORM_TARGET === 'desktop' && (
           <StudioDebugControlsTray
             onPlay={maybeOpenSimulator}
             simulatorId={simulatorId}
           />
         )}
-        simulatorPanel={<DebugSimulatorPanel simulatorId={simulatorId} />}
+        simulatorPanel={Build8.PLATFORM_TARGET === 'desktop' && <DebugSimulatorPanel simulatorId={simulatorId} />}
         {...rest}
       />
     </YogaParentContextProvider>

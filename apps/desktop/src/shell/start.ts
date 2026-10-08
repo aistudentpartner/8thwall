@@ -5,6 +5,8 @@
 // @attr(externals = "electron, sharp")
 
 import {app, BrowserWindow, protocol, dialog, ipcMain} from 'electron'
+import fs from 'node:fs'
+import path from 'node:path'
 import {autoUpdater} from 'electron-updater'
 import log from 'electron-log'
 
@@ -25,9 +27,15 @@ import {setupMenu} from './menu'
 import {IMAGE_TARGETS_SCHEME, registerImageTargetsHandler} from '../image-targets/protocol'
 import {setUpSystemLogPort} from '../system-log/ports'
 import {setupDev8SocketPort} from '../dev8-socket/ports'
-import {PRELOAD_PATH} from '../core/resources'
+import {PRELOAD_PATH, CLIENT_DIST_PATH} from '../core/resources'
 
 const UPDATE_CHECK_INTERVAL = 60 * 60 * 1000
+
+if (process.argv.includes('--software-rendering')) {
+  app.disableHardwareAcceleration()
+  app.commandLine.appendSwitch('use-angle', 'swiftshader')
+  app.commandLine.appendSwitch('enable-unsafe-swiftshader')
+}
 
 const setupAutoUpdater = (win: BrowserWindow) => {
   autoUpdater.logger = log
@@ -70,12 +78,18 @@ try {
 } catch (error) {
   // eslint-disable-next-line no-console
   console.error('Failed to initialize database:', error)
+  dialog.showErrorBox('無法開啟本機專案資料庫', String(error))
   process.exit(1)
 }
 
-app.commandLine.appendSwitch('ignore-certificate-errors')
+if (process.env.STANDALONE_MODE !== '1') {
+  app.commandLine.appendSwitch('ignore-certificate-errors')
+}
 
 const createWindow = () => {
+  if (!fs.existsSync(path.join(CLIENT_DIST_PATH, 'index.html'))) {
+    throw new Error('找不到工作室介面。請先執行 Setup-Standalone.cmd 完成建置。')
+  }
   const win = new BrowserWindow({
     width: 1600,
     height: 1200,
@@ -84,6 +98,8 @@ const createWindow = () => {
     webPreferences: {
       preload: PRELOAD_PATH,
       devTools: !process.env.RELEASE,
+      contextIsolation: true,
+      nodeIntegration: false,
     },
     frame: false,
     title: app.getName(),
@@ -98,9 +114,23 @@ const createWindow = () => {
       : {
         trafficLightPosition: {x: 10, y: 10},
       }),
-    backgroundColor: '#fff',
+    backgroundColor: '#171721',
   })
-  win.loadURL('desktop://dist/index.html')
+  win.webContents.on('did-fail-load', (_event, code, description, url, mainFrame) => {
+    if (!mainFrame || code === -3) return
+    log.error('介面載入失敗', code, description, url)
+    dialog.showErrorBox('工作室載入失敗', `${description} (${code})\n${url}\n請使用「檢視 → 開發者工具」查看詳細錯誤。`)
+  })
+  win.webContents.on('preload-error', (_event, preloadPath, error) => {
+    log.error('Preload failed', preloadPath, error)
+    dialog.showErrorBox('工作室元件載入失敗', String(error.stack || error))
+  })
+  win.webContents.on('render-process-gone', (_event, details) => {
+    log.error('Renderer stopped', details)
+    dialog.showErrorBox('工作室畫面已停止', `原因：${details.reason}\n請重新啟動。若仍為黑畫面，可使用 Start-Standalone-Software.cmd。`)
+  })
+  win.loadURL(process.env.STANDALONE_MODE === '1'
+    ? 'desktop://dist/index.html?lang=zh-TW' : 'desktop://dist/index.html')
   registerWindowOpenHandler(win)
   registerOnOpenUrlHandler(win)
   registerSecondInstanceHandler(win)
@@ -140,7 +170,9 @@ const protocolName = STUDIO_HUB_PROTOCOL.slice(0, -1)
 log.info('Registering as default protocol client for:', protocolName)
 log.info('Current platform:', process.platform)
 
-if (app.setAsDefaultProtocolClient(protocolName)) {
+if (process.env.STANDALONE_MODE === '1') {
+  log.info('Standalone: keeping the installed 8th Wall protocol association unchanged')
+} else if (app.setAsDefaultProtocolClient(protocolName)) {
   log.info('Successfully registered as default protocol client')
 } else {
   log.error('Failed to register as default protocol client')
@@ -151,7 +183,7 @@ const handleReady = () => {
   registerFileSyncHandler()
   registerPreferencesHandler()
   registerImageTargetsHandler()
-  maybeUpdateOnBeforeRequest()
+  if (process.env.STANDALONE_MODE !== '1') maybeUpdateOnBeforeRequest()
 
   const win = createWindow()
 
@@ -164,10 +196,13 @@ const handleReady = () => {
     navigateToDeepLink(win, process.argv.pop() || '')
   })
 
-  if (app.isPackaged) {
+  if (app.isPackaged && process.env.STANDALONE_MODE !== '1') {
     setupAutoUpdater(win)
   }
 }
 
-await app.whenReady()
-handleReady()
+app.whenReady().then(handleReady).catch((error) => {
+  log.error('Startup failed', error)
+  dialog.showErrorBox('工作室啟動失敗', String(error.stack || error))
+  app.quit()
+})

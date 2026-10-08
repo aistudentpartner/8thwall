@@ -199,8 +199,14 @@ const NeedsMigrationView: React.FC = () => {
   )
 }
 
+const OfflineRuntimeVersion: React.FC = () => {
+  const {version} = useRuntimeMetadata()
+  return <RowContent>本機執行環境：{version}（單機模式）</RowContent>
+}
+
 const RuntimeVersionConfiguratorMigrationCheck: React.FC = () => {
   const {simulatorEnabled} = usePlaybackContext()
+  if (Build8.VERSION_ID === 'standalone-tw') return <OfflineRuntimeVersion />
   if (!simulatorEnabled) {
     return <NeedsMigrationView />
   }
