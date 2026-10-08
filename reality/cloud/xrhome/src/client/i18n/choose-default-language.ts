@@ -24,8 +24,14 @@ const getLocaleFromPreferredLang = () => {
   // Find the first prefix match if it's a locale code without country, e.g. "ja"
   if (preferredLanguages) {
     for (let i = 0; i < preferredLanguages.length; i++) {
+      const preferredLanguage = preferredLanguages[i].toLowerCase()
+      // Traditional Chinese browsers may report a script or region rather than zh-TW.
+      // Do not treat explicitly Simplified Chinese (zh-Hans / zh-CN) as a match.
+      if (/^zh-(hant(?:-|$)|(?:tw|hk|mo)(?:-|$))/.test(preferredLanguage)) {
+        return 'zh-TW'
+      }
       const foundSupportedLocale = getSupportedLocales8w().find(
-        supportedLocale => supportedLocale.startsWith(preferredLanguages[i])
+        supportedLocale => supportedLocale.toLowerCase().startsWith(preferredLanguage)
       )
       if (foundSupportedLocale) {
         return foundSupportedLocale

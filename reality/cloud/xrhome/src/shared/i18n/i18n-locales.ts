@@ -5,6 +5,7 @@ const FALLBACK_LOCALE = 'en-US' as SupportedLocale8w
 // Locales supported by 8th Wall builds.
 const PROD_SUPPORTED_LOCALES_8W = [
   'en-US',
+  'zh-TW',
   'ja-JP',
   'fr-FR',
   'de-DE',
@@ -38,6 +39,7 @@ const filterUnsupported8w = <T>(localeMap: Partial<{[key in SupportedLocale8w]: 
 
 const getSupportedLocale8wOptionsMap = () => filterUnsupported8w({
   'en-US': 'English',
+  'zh-TW': '繁體中文（臺灣）',
   'ja-JP': '日本語',
   'fr-FR': 'Français',
   'de-DE': 'Deutsch',

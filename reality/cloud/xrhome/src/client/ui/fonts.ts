@@ -1,7 +1,8 @@
 /* eslint-disable local-rules/hardcoded-copy */
-const brand8BodyFontFamily = 'Geist, sans-serif'
-const brand8HeadingFontFontFamily = 'Mozilla Headline, sans-serif'
-const brand8MonospaceFontFamily = 'Geist mono, monospace'
+const cjkFontFallback = '"Noto Sans TC", "PingFang TC", "Microsoft JhengHei"'
+const brand8BodyFontFamily = `Geist, ${cjkFontFallback}, sans-serif`
+const brand8HeadingFontFontFamily = `Mozilla Headline, ${cjkFontFallback}, sans-serif`
+const brand8MonospaceFontFamily = `Geist mono, ${cjkFontFallback}, monospace`
 /* eslint-enable local-rules/hardcoded-copy */
 
 export {

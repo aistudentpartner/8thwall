@@ -1,0 +1,8 @@
+{
+  "caught_error_page.heading": "發生錯誤。",
+  "caught_error_page.open_github_issue": "若問題持續發生，請建立 <1>GitHub Issue</1>，並提供下列詳細資訊。",
+  "caught_error_page.not_found": "找不到內容",
+  "caught_error_page.button.show_details": "顯示詳細資料",
+  "caught_error_page.client_version.label": "應用程式版本：",
+  "caught_viewport_error.error_occurred": "3D 視窗發生非預期的錯誤。請修正後再試一次，或還原至上次正常的狀態。"
+}
