@@ -42,6 +42,23 @@ npm start --prefix apps/web
 
 如已下載此分支，先保存自己的未提交變更，再 `git pull --ff-only`，接著重新安裝與建置。
 
+### Windows：`spawnSync npm ENOENT`
+
+早期的 `build-web.cjs` 直接以 `execFileSync('npm', ...)` 安裝 Semantic UI 相依套件，
+無法在 Windows 正確啟動 npm 的 `.cmd` 入口。已改成透過目前 Node 執行 npm 提供的 CLI 路徑，
+也支援 `Program Files` 等含空白的路徑。
+
+若遇到這個錯誤，在現有 repository 的命令提示字元執行：
+
+```bat
+git pull --ff-only origin feat/zh-tw-localization
+npm run build:web --prefix reality/cloud/xrhome
+```
+
+建置成功後再執行 `npm start --prefix apps/web`。不需要重新下載 repository 或重新安裝 Node.js。
+`Run npm audit for details` 是 npm 的套件稽核提示，與這個程序啟動錯誤是不同問題。
+這項修正已驗證 CLI 啟動、含空白路徑、失敗傳遞與首次樣式建置；尚未完成 Windows 實機驗收。
+
 ## 資料與範圍
 
 預設專案目錄為 `apps/web/.data/`，已排除 Git 追蹤；備份整個目錄才能備份專案。可用環境變數 `STUDIO_DATA_DIR` 指定其他資料位置，`PORT` 改變監聽埠。

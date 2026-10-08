@@ -2,6 +2,7 @@
 const fs = require('node:fs')
 const path = require('node:path')
 const {execFileSync} = require('node:child_process')
+const {runNpm} = require('./run-npm.cjs')
 process.chdir(path.resolve(__dirname, '..'))
 require('ts-node').register({transpileOnly: true})
 const webpack = require('webpack')
@@ -26,7 +27,7 @@ const options = {
 }
 
 if (!fs.existsSync('semantic/dist/semantic.min.css')) {
-  execFileSync('npm', ['ci', '--ignore-scripts', '--no-audit', '--no-fund'], {
+  runNpm(['ci', '--ignore-scripts', '--no-audit', '--no-fund'], {
     cwd: 'semantic', stdio: 'inherit',
   })
   execFileSync(process.execPath, ['node_modules/gulp/bin/gulp.js', 'build'], {
